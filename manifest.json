@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "DWG Viewer (ビューア)",
+  "version": "1.0.0",
+  "description": "DWGをブラウザ内で読み込み表示します。解析・描画はすべてローカル(WASM)で完結し、ファイルは外部送信されません。ドラッグ&ドロップ対応。",
+  "action": {
+    "default_title": "DWG Viewer を開く"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "sandbox": {
+    "pages": ["sandbox.html"]
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
+    "sandbox": "sandbox allow-scripts; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["vendor/wasm/libredwg-web.wasm", "vendor/wasm/libredwg-web.js", "vendor/dist/libredwg-web.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

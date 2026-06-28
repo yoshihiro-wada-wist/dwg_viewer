@@ -1,0 +1,16 @@
+{
+  "name": "dwg-viewer",
+  "version": "1.0.0",
+  "description": "DWGをブラウザ内で読み込み表示するChrome拡張。解析・描画はすべてローカル(WASM)で完結し、ファイルは外部送信されません。ドラッグ&ドロップ・レイヤ表示切替・印刷に対応。",
+  "main": "background.js",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@playwright/test": "^1.61.1"
+  }
+}

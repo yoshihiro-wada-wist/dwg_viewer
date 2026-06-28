@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DWG Viewer</title>
+  <link rel="stylesheet" href="viewer.css" />
+</head>
+<body>
+  <header class="toolbar">
+    <div class="files">
+      <label class="filebtn">
+        DWGを開く
+        <input type="file" id="file" accept=".dwg" />
+      </label>
+      <span class="fname" id="name">未選択</span>
+    </div>
+
+    <div class="toggles">
+      <label class="chk"><input type="checkbox" id="invert" checked /> 白背景</label>
+      <button id="layersBtn">レイヤ</button>
+      <button id="fitBtn">全体表示</button>
+      <button id="printBtn">印刷</button>
+    </div>
+  </header>
+
+  <main>
+    <canvas id="canvas"></canvas>
+
+    <aside id="layers" class="layers hidden">
+      <div class="layers-head">
+        <strong>レイヤ</strong>
+        <div class="layers-actions">
+          <button id="layersAll" class="mini">全表示</button>
+          <button id="layersNone" class="mini">全非表示</button>
+        </div>
+      </div>
+      <div id="layersList" class="layers-list"></div>
+    </aside>
+
+    <div id="overlay" class="overlay">
+      <div class="hint" id="dropzone">
+        <h1>DWG ビューア</h1>
+        <p>DWGファイルをここに<b>ドラッグ&amp;ドロップ</b>するか、左上の「DWGを開く」から選択してください。</p>
+        <p class="small">解析・描画はすべてこのブラウザ内で完結し、ファイルは外部に送信されません。</p>
+      </div>
+    </div>
+
+    <div id="drophint" class="drophint hidden">ここにドロップして開く</div>
+    <div id="status" class="status"></div>
+  </main>
+
+  <script type="module" src="viewer.js"></script>
+</body>
+</html>

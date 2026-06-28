@@ -1,0 +1,20 @@
+# Dependencies
+node_modules
+
+# Test / build artifacts
+test-results
+playwright-report
+
+# Logs
+*.log
+npm-debug.log*
+
+# Claude development notes (not part of the extension)
+memory/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
