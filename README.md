@@ -27,8 +27,9 @@ DWGをブラウザ内で読み込み表示します。解析・描画はすべ�
 
 ## 対応エンティティ
 LINE / CIRCLE / ARC / ELLIPSE / LWPOLYLINE / POLYLINE（bulge対応）/ POINT /
-TEXT / MTEXT / ATTRIB / ATTDEF / SPLINE（折れ線近似）/
-SOLID / 3DFACE。未対応エンティティ（INSERT・HATCH・DIMENSION等）は件数のみ画面下に表示。
+TEXT / MTEXT / ATTRIB / ATTDEF（幅係数・整列・縦書き対応）/ SPLINE（折れ線近似）/
+SOLID / 3DFACE / DIMENSION（寸法：匿名ブロックの計算済み幾何を展開して描画）。
+未対応エンティティ（INSERT・HATCH等）は件数のみ画面下に表示。
 
 ## 構成
 ```
@@ -71,7 +72,9 @@ npm test
 - ブロック(INSERT)は未展開のため非表示（未対応として件数のみ表示）。以前は挿入点に枠＋ブロック名を描いていたが、実在しない図形に見えるため廃止。
 - SPLINE はフィット点／制御点を結ぶ折れ線近似（真のNURBS評価ではない）。
 - OCS/押し出し方向は未考慮（通常の平面図 Z上向き前提）。
-- HATCH・DIMENSION・MLINE 等は未描画（件数は画面下に表示）。
+- 寸法(DIMENSION)は匿名ブロックの計算済み幾何を展開して描画（線・矢印・寸法値）。ブロックを持たない寸法は未描画。
+- テキストはSHXフォントを sans-serif で代替するため、AutoCADと字形・サイズが厳密には一致しない。
+- HATCH・MLINE 等は未描画（件数は画面下に表示）。
 - libredwg の限界により一部のDWG（独自オブジェクト等）は開けない場合があります。
 
 ライセンス注意：libredwg-web は GPL-3.0。再配布時は条件に従ってください。

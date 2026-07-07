@@ -233,9 +233,12 @@ function render() {
       ctx.save();
       ctx.translate(s.x, s.y);
       if (l.rot) ctx.rotate(-l.rot);
+      if (l.wf && l.wf !== 1) ctx.scale(l.wf, 1); // 幅係数(xScale)
       ctx.fillStyle = col;
+      // DWGのtextHeightをそのままemに（CJKはグリフがほぼem全体を埋めるため一致が良い）
       ctx.font = `${fs}px sans-serif`;
-      ctx.textBaseline = 'bottom';
+      ctx.textAlign = l.align || 'left';
+      ctx.textBaseline = l.baseline || 'alphabetic';
       ctx.fillText(l.text, 0, 0);
       ctx.restore();
     }
@@ -283,9 +286,11 @@ function printDrawing() {
       c.save();
       c.translate(s.x, s.y);
       if (l.rot) c.rotate(-l.rot);
+      if (l.wf && l.wf !== 1) c.scale(l.wf, 1);
       c.fillStyle = col;
       c.font = `${fs}px sans-serif`;
-      c.textBaseline = 'bottom';
+      c.textAlign = l.align || 'left';
+      c.textBaseline = l.baseline || 'alphabetic';
       c.fillText(l.text, 0, 0);
       c.restore();
     }

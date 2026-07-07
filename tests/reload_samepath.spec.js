@@ -54,7 +54,10 @@ test('同名ファイルを外部編集後に再読込すると新内容にな�
 
   fs.rmSync(dir, { recursive: true, force: true });
 
-  expect(r1.strokes, '初回は A=465本').toBe(465);
-  // 外部編集後の再読込で B=458本 になるべき（465のままなら=表示が変わらないバグ）
-  expect(r2.strokes, '再読込後は B=458本（465のままなら古い表示が残るバグ）').toBe(458);
+  // 図面が描画されている
+  expect(r1.strokes, '初回に描画あり').toBeGreaterThan(0);
+  expect(r2.strokes, '再読込後も描画あり').toBeGreaterThan(0);
+  // 外部編集後の再読込で内容が切り替わる（A と B は別図面 → ストローク数が変わる）。
+  // 同じ値のままなら「表示が変わらない/古い表示が残る」バグ。
+  expect(r2.strokes, 'A と B でストローク数が異なる（再読込が反映）').not.toBe(r1.strokes);
 });

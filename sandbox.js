@@ -107,8 +107,41 @@ function entityColor(e) {
   return aciToRgb(aci);
 }
 
+// ===== テキスト整形ユーティリティ =====
+// MTEXT の書式制御コードを除去し、段落区切り \P を改行に変換する。
+function stripMText(s) {
+  return String(s)
+    .replace(/\\P/g, '\n')                       // 段落区切り → 改行
+    .replace(/\\~/g, ' ')                         // ノーブレークスペース
+    .replace(/\\S([^;]*?)\^([^;]*?);/g, '$1/$2')  // 分数/上下付き a^b → a/b（近似）
+    .replace(/\\S([^;]*?);/g, '$1')               // 積み上げ（近似で中身のみ）
+    .replace(/\\[A-Za-z][^\\;{}]*;/g, '')         // \H..; \W..; \A..; \C..; \F..; \Q..; \T..; \p..; など
+    .replace(/\\[Ll]/g, '').replace(/\\[Oo]/g, '').replace(/\\[Kk]/g, '') // 下線/上線/取消線トグル
+    .replace(/[{}]/g, '')                         // グループ化ブレース
+    .replace(/\\\\/g, '\\')                       // エスケープされた \
+    .replace(/[ \t]+\n/g, '\n');                  // 行末空白
+}
+
+// TEXT の halign(72)/valign(73) → Canvas の textAlign/textBaseline
+function textAlignFromTEXT(halign, valign) {
+  const align = (halign === 1 || halign === 4) ? 'center' : halign === 2 ? 'right' : 'left';
+  // halign=4(Middle)は水平・垂直とも中央
+  const baseline = halign === 4 ? 'middle'
+    : valign === 3 ? 'top' : valign === 2 ? 'middle' : valign === 1 ? 'bottom' : 'alphabetic';
+  return { align, baseline };
+}
+// MTEXT attachmentPoint(71) 1..9 (TL,TC,TR,ML,MC,MR,BL,BC,BR) → textAlign/textBaseline
+function textAlignFromMTEXT(ap) {
+  const col = (ap - 1) % 3;            // 0:left 1:center 2:right
+  const row = Math.floor((ap - 1) / 3); // 0:top 1:middle 2:bottom
+  return {
+    align: col === 0 ? 'left' : col === 1 ? 'center' : 'right',
+    baseline: row === 0 ? 'top' : row === 1 ? 'middle' : 'bottom',
+  };
+}
+
 // ===== エンティティ -> 描画プリミティブ =====
-function entityToShapes(e) {
+function entityToShapes(e, styleMap = {}) {
   const polylines = [];
   const labels = [];
   let supported = false;
@@ -163,10 +196,56 @@ function entityToShapes(e) {
       polylines.push([{ x: p.x, y: p.y - d }, { x: p.x, y: p.y + d }]);
       supported = true;
     } else if (t === 'TEXT' || t === 'MTEXT' || t === 'ATTRIB' || t === 'ATTDEF') {
-      const p = e.startPoint || e.insertionPoint || e.position || { x: 0, y: 0 };
       const h = e.textHeight || e.height || e.rectHeight || 1;
-      const str = (e.text || '').toString();
-      if (str) labels.push({ x: p.x, y: p.y, text: str, h, rot: e.rotation || 0 });
+      const wf = (typeof e.xScale === 'number' && e.xScale > 0) ? e.xScale : 1; // 幅係数
+      const rot = e.rotation || 0;
+      if (t === 'MTEXT') {
+        // MTEXT: insertionPoint 基準、attachmentPoint で整列、\P で複数行
+        const p = e.insertionPoint || e.startPoint || e.position || { x: 0, y: 0 };
+        // MTEXTの角度は direction(X軸方向ベクトル group11) が優先。無ければ rotation。
+        // （直径/角度寸法などは rotation=0 でも direction に寸法線の傾きが入る）
+        const dir = e.direction;
+        const mrot = (dir && (dir.x || dir.y)) ? Math.atan2(dir.y, dir.x) : rot;
+        const { align, baseline } = textAlignFromMTEXT((e.attachmentPoint | 0) || 1);
+        const lines = stripMText(e.text || '').split('\n');
+        const lh = h * 1.4; // 行間（近似）
+        // baseline が top/middle/bottom のどれでも、1行目を上端起点に順に下げる
+        const n = lines.length;
+        for (let i = 0; i < n; i++) {
+          const str = lines[i];
+          if (!str) continue;
+          // 行方向はローカルY(下向き)。回転を考慮して各行をずらす
+          const dy = -(i) * lh; // 上→下（world Y は上向きなので減算）
+          const lx = p.x + dy * Math.sin(mrot);
+          const ly = p.y + dy * Math.cos(mrot);
+          labels.push({ x: lx, y: ly, text: str, h, rot: mrot, wf, align, baseline });
+        }
+      } else {
+        const halign = e.halign | 0, valign = e.valign | 0;
+        const str = (e.text || '').toString();
+        const p1 = e.startPoint || e.insertionPoint || e.position || { x: 0, y: 0 };
+        const p2 = (e.endPoint && (e.endPoint.x || e.endPoint.y)) ? e.endPoint : p1;
+        const vertical = !!(styleMap[e.styleName] && styleMap[e.styleName].vertical);
+        if (vertical && str) {
+          // 縦書き（テキストスタイルの縦フラグ）: 1文字ずつ上→下に積む。
+          // 整列点の中点を列の中心に、送り＝文字高で上下対称に配置（重なり防止）。
+          const chars = Array.from(str);
+          const n = chars.length;
+          const cx = (p1.x + p2.x) / 2;
+          const cy0 = (p1.y + p2.y) / 2;
+          const step = h; // 1文字あたりの送り
+          for (let i = 0; i < n; i++) {
+            const cy = cy0 + ((n - 1) / 2 - i) * step; // i=0が上端
+            labels.push({ x: cx, y: cy, text: chars[i], h, rot, wf, align: 'center', baseline: 'middle' });
+          }
+        } else if (str) {
+          // 横書き: 整列テキストは第2整列点(endPoint=group11)が基準
+          const aligned = halign !== 0 || valign !== 0;
+          const p = aligned ? p2 : p1;
+          const { align, baseline } = textAlignFromTEXT(halign, valign);
+          labels.push({ x: p.x, y: p.y, text: str, h, rot, wf, align, baseline });
+        }
+      }
       supported = true;
     } else if (t === 'SPLINE') {
       const cp = (e.fitPoints && e.fitPoints.length ? e.fitPoints : e.controlPoints) || [];
@@ -186,12 +265,25 @@ function entityToShapes(e) {
   };
 }
 
-function buildItems(entities) {
+function buildItems(entities, styleMap = {}, blockMap = {}) {
   const items = [];
   let unsupported = 0;
   for (const e of entities) {
     if (e.isInPaperSpace) continue;
-    const s = entityToShapes(e);
+    if (e.type === 'DIMENSION') {
+      // 寸法は計算済み幾何を匿名ブロック(*D#)に持つ。そのブロックを展開して描く。
+      const blk = e.name && blockMap[e.name];
+      if (blk && blk.length) {
+        for (const be of blk) {
+          const s = entityToShapes(be, styleMap);
+          if (s) items.push(s);
+        }
+      } else {
+        unsupported++;
+      }
+      continue;
+    }
+    const s = entityToShapes(e, styleMap);
     if (!s) { unsupported++; continue; }
     items.push(s);
   }
@@ -208,10 +300,11 @@ async function parseToItems(buffer) {
   if (ptr === undefined || ptr === null || ptr === 0) {
     throw new Error('libredwg がこのDWGを開けませんでした（未対応バージョン/独自オブジェクトの可能性）');
   }
-  let entities, stats;
+  let entities, stats, db;
   try {
     const r = lib.convertEx(ptr);
-    entities = (r.database && r.database.entities) || [];
+    db = r.database || {};
+    entities = db.entities || [];
     stats = r.stats || { unknownEntityCount: 0 };
   } catch (e) {
     try { lib.dwg_free(ptr); } catch (_) {}
@@ -219,8 +312,36 @@ async function parseToItems(buffer) {
     throw new Error('convert: ' + (e.message || e));
   }
   try { lib.dwg_free(ptr); } catch (_) {}
-  const { items, unsupported } = buildItems(entities);
+  const styleMap = buildStyleMap(db);
+  const blockMap = buildBlockMap(db);
+  const { items, unsupported } = buildItems(entities, styleMap, blockMap);
   return { items, unsupported, stats, total: entities.length };
+}
+
+// BLOCK_RECORD から「ブロック名 → 内包エンティティ配列」を作る（寸法の匿名ブロック展開用）
+function buildBlockMap(db) {
+  const map = {};
+  try {
+    const br = db && db.tables && db.tables.BLOCK_RECORD && db.tables.BLOCK_RECORD.entries;
+    const arr = Array.isArray(br) ? br : (br && typeof br === 'object' ? Object.values(br) : []);
+    for (const b of arr) {
+      if (b && b.name && Array.isArray(b.entities)) map[String(b.name)] = b.entities;
+    }
+  } catch (_) { /* 取得失敗時は空マップ */ }
+  return map;
+}
+
+// STYLEテーブルから「スタイル名 → 縦書きか」を作る（standardFlag のビット4=縦書き）
+function buildStyleMap(db) {
+  const map = {};
+  try {
+    const ent = db && db.tables && db.tables.STYLE && db.tables.STYLE.entries;
+    const arr = Array.isArray(ent) ? ent : (ent && typeof ent === 'object' ? Object.values(ent) : []);
+    for (const s of arr) {
+      if (s && s.name != null) map[String(s.name)] = { vertical: !!((s.standardFlag | 0) & 4) };
+    }
+  } catch (_) { /* スタイル取得失敗時は空マップ（全て横書き扱い） */ }
+  return map;
 }
 
 window.addEventListener('message', async (ev) => {
