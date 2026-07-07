@@ -168,13 +168,6 @@ function entityToShapes(e) {
       const str = (e.text || '').toString();
       if (str) labels.push({ x: p.x, y: p.y, text: str, h, rot: e.rotation || 0 });
       supported = true;
-    } else if (t === 'INSERT') {
-      const p = e.insertionPoint; const m = 2;
-      polylines.push([{ x: p.x - m, y: p.y - m }, { x: p.x + m, y: p.y - m },
-                      { x: p.x + m, y: p.y + m }, { x: p.x - m, y: p.y + m },
-                      { x: p.x - m, y: p.y - m }]);
-      labels.push({ x: p.x, y: p.y, text: e.name || '(block)', h: 2, rot: e.rotation || 0 });
-      supported = true;
     } else if (t === 'SPLINE') {
       const cp = (e.fitPoints && e.fitPoints.length ? e.fitPoints : e.controlPoints) || [];
       if (cp.length) polylines.push(cp.map(p => ({ x: p.x, y: p.y })));

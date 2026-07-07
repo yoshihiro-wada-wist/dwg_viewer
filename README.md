@@ -27,8 +27,8 @@ DWGをブラウザ内で読み込み表示します。解析・描画はすべ�
 
 ## 対応エンティティ
 LINE / CIRCLE / ARC / ELLIPSE / LWPOLYLINE / POLYLINE（bulge対応）/ POINT /
-TEXT / MTEXT / ATTRIB / ATTDEF / INSERT（挿入点に枠＋ブロック名）/ SPLINE（折れ線近似）/
-SOLID / 3DFACE。未対応エンティティ（HATCH・DIMENSION等）は件数のみ画面下に表示。
+TEXT / MTEXT / ATTRIB / ATTDEF / SPLINE（折れ線近似）/
+SOLID / 3DFACE。未対応エンティティ（INSERT・HATCH・DIMENSION等）は件数のみ画面下に表示。
 
 ## 構成
 ```
@@ -68,7 +68,7 @@ npm test
 > 実ブラウザでは正常に描画されます。
 
 ## 既知の制限
-- ブロック(INSERT)は未展開：挿入点に枠＋ブロック名のみ表示。
+- ブロック(INSERT)は未展開のため非表示（未対応として件数のみ表示）。以前は挿入点に枠＋ブロック名を描いていたが、実在しない図形に見えるため廃止。
 - SPLINE はフィット点／制御点を結ぶ折れ線近似（真のNURBS評価ではない）。
 - OCS/押し出し方向は未考慮（通常の平面図 Z上向き前提）。
 - HATCH・DIMENSION・MLINE 等は未描画（件数は画面下に表示）。
