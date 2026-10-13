@@ -44,7 +44,7 @@ dwg_viewer/
     wasm/libredwg-web.js   … Emscriptenローダ
     wasm/libredwg-web.wasm … LibreDWG本体（約6MB）
   tests/               … Playwright（MV3拡張をロードして検証）
-  test_data/           … サンプルDWG
+  test_data/           … サンプルDWG（リポジトリには含めていません。テスト実行時に各自配置）
 ```
 
 ## アーキテクチャ（なぜsandboxを使うか）

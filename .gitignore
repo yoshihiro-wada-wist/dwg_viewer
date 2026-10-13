@@ -9,6 +9,9 @@ playwright-report
 *.log
 npm-debug.log*
 
+# Sample DWG drawings (not published; place your own files here to run tests)
+test_data/
+
 # Claude development notes (not part of the extension)
 memory/
 
